@@ -1,5 +1,6 @@
 ;;Options
 (setq inhibit-startup-screen t)
+(setq backup-directory-alist '(("." . "~/.emacs.d/saves")))
 (tool-bar-mode 0)
 (tooltip-mode 0)
 (scroll-bar-mode 0)
@@ -10,7 +11,6 @@
 (setq use-dialob-box nil)
 (global-auto-revert-mode 1)
 (setq global-auto-revert-non-file-buffer t)
-
 (column-number-mode 1)
 (global-display-line-numbers-mode 1)
 (setq display-line-numbers 'relative)
@@ -101,21 +101,28 @@
 ;;Keymaps
 (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 (windmove-default-keybindings)
-
 (use-package general
 :config (general-evil-setup t)
 
-(general-create-definer voxalium/leader-keys
+(general-create-definer keymaps/leader-keys
   :keymaps '(normal insert visual emacs)
   :prefix "SPC"
   :global-prefix "C-SPC")
-(voxalium/leader-keys
+(keymaps/leader-keys
  "e" '(dired :which-key "Open dired")
  "x" '(delete-window :which-key "Delete window")
  "b" '(counsel-switch-buffer :which-key "Switch buffer")
  "s h" '(split-window-horizontally :which-key "Split horizontally")
  "s v" '(split-window-vertically :which-key "Split vertically")
+ "f f" '(counsel-find-file :which-key "Find files")
+ "f p" '(projectile-switch-project :which-key "Switch projects")
  ))
+
+(use-package drag-stuff
+  :init
+  (drag-stuff-global-mode 1)
+  (drag-stuff-define-keys)
+  )
 
 (use-package evil-collection
   :after evil
@@ -131,6 +138,12 @@
   (evil-global-set-key 'motion "j" 'evil-next-visual-line)
   (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
   )
+
+(use-package undo-tree)
+(global-undo-tree-mode)
+(setq evil-undo-system 'undo-tree)
+
+(setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
 (use-package hydra)
 (defhydra hydra-zoom (global-map "<f2>" )
 	  "zoom"
@@ -149,19 +162,60 @@
 (use-package counsel-projectile
   :config (counsel-projectile-mode))
 
+(use-package forge)
+(use-package ghub)
+
+(defun voxalium/org-mode-setup ()
+  (org-indent-mode)
+  (variable-pitch-mode 1)
+  (visual-line-mode 1))
+(defun voxalium/org-font-setup ()
+  ;; Replace list hyphen with dot
+  (font-lock-add-keywords 'org-mode
+                          '(("^ *\\([-]\\) "
+                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+
+  ;; Set faces for heading levels
+  (dolist (face '((org-level-1 . 1.2)
+                  (org-level-2 . 1.1)
+                  (org-level-3 . 1.05)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.1)
+                  (org-level-6 . 1.1)
+                  (org-level-7 . 1.1)
+                  (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil :font "FiraCode Nerd Font Mono" :weight 'regular :height (cdr face)))
+
+  ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+  (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-code nil   :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-table nil   :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+(use-package org
+  :hook (org-mode . voxalium/org-mode-setup)
+  :config
+  (setq org-ellipsis " +"
+	org-hide-emphasis-markers t)
+	(voxalium/org-font-setup)
+	)
+  
+(use-package org-bullets
+  :after org
+  :hook (org-mode . org-bullets-mode)
+  :custom
+  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+(defun voxalium/org-mode-visual-fill ()
+  (setq visual-fill-column-width 100
+        visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
+(use-package visual-fill-column
+  :hook (org-mode . voxalium/org-mode-visual-fill))
 
 
-
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(counsel-projectile projectile hydra evil-collection general which-key rainbow-delimiters magit lsp-mode ivy-rich helpful evil doom-themes doom-modeline counsel all-the-icons)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+(setq custom-file "~/.emacs.d/custom.el")
+(load custom-file)
