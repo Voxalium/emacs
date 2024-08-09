@@ -71,7 +71,12 @@
   :config(setq which-key-idle-delay 0.3))
 
 (use-package doom-modeline
-  :init (doom-modeline-mode 1))
+  :init (doom-modeline-mode 1)
+  (setq doom-modeline-height 15)
+  (setq doom-modeline-major-mode-icon nil)
+  (setq doom-modeline-modal-modern-icon nil)
+  (setq doom-modeline-buffer-encoding nil)
+  )
 (use-package magit
   :custom
   (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
